@@ -1,25 +1,22 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { haptic } from '../audio/sound';
-import { CHARACTERS, Character } from '../game/characters';
-import { MAX_UPGRADE_LEVEL, PowerUpType, UPGRADE_INFO, powerUpDuration, upgradeCost } from '../game/config';
+import { MAX_UPGRADE_LEVEL, PowerUpType, SKINS, UPGRADE_INFO, powerUpDuration, upgradeCost } from '../game/config';
 import { updateSave, useSave } from '../state/save';
-import { CharacterViewer } from './CharacterViewer';
 import { CoinIcon } from './Hud';
 import { NeonButton, NeonText, Panel, Scrim } from './Neon';
 import { UI } from './theme';
 
-type Tab = 'characters' | 'upgrades';
+type Tab = 'runners' | 'upgrades';
 
 export function ShopScreen({ onClose }: { onClose: () => void }) {
   const save = useSave();
-  const [tab, setTab] = useState<Tab>('characters');
-  const [viewing, setViewing] = useState<Character | null>(null);
+  const [tab, setTab] = useState<Tab>('runners');
 
-  const buyCharacter = (id: string, price: number) => {
+  const buySkin = (id: string, price: number) => {
     if (save.coins < price) return;
     haptic('success');
-    updateSave((d) => ({ ...d, coins: d.coins - price, ownedCharacters: [...d.ownedCharacters, id], character: id }));
+    updateSave((d) => ({ ...d, coins: d.coins - price, ownedSkins: [...d.ownedSkins, id], skin: id }));
   };
 
   const buyUpgrade = (type: PowerUpType) => {
@@ -30,20 +27,12 @@ export function ShopScreen({ onClose }: { onClose: () => void }) {
     updateSave((d) => ({ ...d, coins: d.coins - cost, upgrades: { ...d.upgrades, [type]: level + 1 } }));
   };
 
-  if (viewing) return <CharacterViewer character={viewing} onClose={() => setViewing(null)} />;
-
   return (
     <Scrim>
       <Panel color={UI.pink} style={styles.panel}>
         <View style={styles.header}>
           <View style={styles.tabs}>
-            <NeonButton
-              small
-              label="CHARACTERS"
-              color={tab === 'characters' ? UI.pink : UI.dim}
-              filled={tab === 'characters'}
-              onPress={() => setTab('characters')}
-            />
+            <NeonButton small label="RUNNERS" color={tab === 'runners' ? UI.pink : UI.dim} filled={tab === 'runners'} onPress={() => setTab('runners')} />
             <NeonButton small label="UPGRADES" color={tab === 'upgrades' ? UI.pink : UI.dim} filled={tab === 'upgrades'} onPress={() => setTab('upgrades')} />
           </View>
           <View style={styles.wallet}>
@@ -55,48 +44,36 @@ export function ShopScreen({ onClose }: { onClose: () => void }) {
           <NeonButton small label="CLOSE" color={UI.cyan} onPress={onClose} />
         </View>
 
-        {tab === 'characters' ? (
+        {tab === 'runners' ? (
           <ScrollView horizontal contentContainerStyle={styles.list} showsHorizontalScrollIndicator={false}>
-            {CHARACTERS.map((character) => {
-              const owned = save.ownedCharacters.includes(character.id);
-              const selected = save.character === character.id;
-              const color = character.accent;
+            {SKINS.map((skin) => {
+              const owned = save.ownedSkins.includes(skin.id);
+              const selected = save.skin === skin.id;
               return (
                 <Pressable
-                  key={character.id}
-                  onPress={() =>
-                    owned ? updateSave((d) => ({ ...d, character: character.id })) : buyCharacter(character.id, character.price)
-                  }
-                  style={[styles.card, { borderColor: selected ? color : 'rgba(255,255,255,0.15)', shadowColor: color }]}
+                  key={skin.id}
+                  onPress={() => (owned ? updateSave((d) => ({ ...d, skin: skin.id })) : buySkin(skin.id, skin.price))}
+                  style={[styles.card, { borderColor: selected ? skin.color : 'rgba(255,255,255,0.15)', shadowColor: skin.color }]}
                 >
-                  <View style={[styles.portrait, { borderColor: color }]} pointerEvents="none">
-                    <Image source={character.portrait} style={styles.portraitImage} resizeMode="cover" />
-                  </View>
-                  <NeonText size={12} color={color} glowColor={color} style={styles.cardName}>
-                    {character.name.toUpperCase()}
+                  <RunnerIcon color={skin.color} />
+                  <NeonText size={13} color={skin.color} glowColor={skin.color}>
+                    {skin.name.toUpperCase()}
                   </NeonText>
                   {owned ? (
                     <NeonText size={10} color={selected ? UI.green : UI.dim}>
-                      {selected ? 'SELECTED' : 'TAP TO SELECT'}
+                      {selected ? 'EQUIPPED' : 'TAP TO EQUIP'}
                     </NeonText>
                   ) : (
-                    <View style={[styles.price, save.coins < character.price && styles.priceLocked]}>
+                    <View style={[styles.price, save.coins < skin.price && styles.priceLocked]}>
                       <CoinIcon size={12} />
                       <NeonText size={11} color={UI.gold}>
-                        {character.price}
+                        {skin.price}
                       </NeonText>
                     </View>
                   )}
-                  <NeonButton small label="VIEW" color={color} onPress={() => setViewing(character)} style={styles.view} />
                 </Pressable>
               );
             })}
-            <View style={[styles.card, styles.comingSoon]}>
-              <RunnerIcon color="rgba(255,255,255,0.18)" />
-              <NeonText size={12} color={UI.dim} style={styles.cardName}>
-                MORE SOON
-              </NeonText>
-            </View>
           </ScrollView>
         ) : (
           <View style={styles.upgrades}>
@@ -161,10 +138,10 @@ const styles = StyleSheet.create({
   wallet: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   list: { gap: 12, paddingVertical: 6, paddingHorizontal: 4 },
   card: {
-    width: 132,
+    width: 108,
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderWidth: 2,
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -172,11 +149,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  portrait: { width: 104, height: 96, borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
-  portraitImage: { width: '100%', height: '100%' },
-  view: { marginTop: 2 },
-  cardName: { textAlign: 'center', paddingHorizontal: 6 },
-  comingSoon: { borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)', shadowOpacity: 0 },
   price: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   priceLocked: { opacity: 0.5 },
   upgrades: { gap: 10 },

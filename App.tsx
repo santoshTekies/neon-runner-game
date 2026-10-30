@@ -6,8 +6,7 @@ import { AppState, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { showRewardedAd } from './src/ads/rewarded';
 import { haptic, initAudio, playSound, setMusicPlaying } from './src/audio/sound';
-import { getCharacter } from './src/game/characters';
-import { MAX_CONTINUES } from './src/game/config';
+import { MAX_CONTINUES, SKINS } from './src/game/config';
 import { InputAction, game } from './src/game/engine';
 import { GameScene } from './src/scene/GameScene';
 import { getSave, loadSave, recordRun, updateSave, useSave } from './src/state/save';
@@ -34,7 +33,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('menu');
   const [result, setResult] = useState<RunResult | null>(null);
   const save = useSave();
-  const character = getCharacter(save.character);
+  const skinColor = SKINS.find((s) => s.id === save.skin)?.color ?? SKINS[0].color;
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
@@ -141,7 +140,7 @@ export default function App() {
     <SafeAreaProvider>
       <View style={styles.root}>
         <StatusBar hidden />
-        <GameScene character={character} />
+        <GameScene skinColor={skinColor} />
 
         {screen === 'playing' && (
           <>

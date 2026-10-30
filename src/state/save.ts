@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
-import { CHARACTERS, DEFAULT_CHARACTER } from '../game/characters';
 import type { Upgrades } from '../game/engine';
 
 export interface HighScore {
@@ -12,8 +11,8 @@ export interface HighScore {
 export interface SaveData {
   coins: number;
   highScores: HighScore[];
-  ownedCharacters: string[];
-  character: string;
+  ownedSkins: string[];
+  skin: string;
   upgrades: Upgrades;
   settings: { music: boolean; sfx: boolean; haptics: boolean };
 }
@@ -24,8 +23,8 @@ const MAX_SCORES = 10;
 const DEFAULT_SAVE: SaveData = {
   coins: 0,
   highScores: [],
-  ownedCharacters: [DEFAULT_CHARACTER.id],
-  character: DEFAULT_CHARACTER.id,
+  ownedSkins: ['cyan'],
+  skin: 'cyan',
   upgrades: { magnet: 0, shield: 0, multiplier: 0 },
   settings: { music: true, sfx: true, haptics: true },
 };
@@ -44,11 +43,6 @@ export async function loadSave() {
         upgrades: { ...DEFAULT_SAVE.upgrades, ...parsed.upgrades },
         settings: { ...DEFAULT_SAVE.settings, ...parsed.settings },
       };
-      // Drop characters that no longer exist (and fall back if the selected one is gone).
-      data.ownedCharacters = [...new Set([DEFAULT_CHARACTER.id, ...data.ownedCharacters])].filter((id) =>
-        CHARACTERS.some((c) => c.id === id),
-      );
-      if (!data.ownedCharacters.includes(data.character)) data.character = DEFAULT_CHARACTER.id;
       listeners.forEach((l) => l());
     }
   } catch (e) {

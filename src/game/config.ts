@@ -64,6 +64,22 @@ export const OBSTACLE_SHAPES: Record<ObstacleType, { halfWidth: number; minY: nu
   block: { halfWidth: 0.95, minY: 0, maxY: 2.4, halfDepth: 0.9 }, // change lane
 };
 
+export interface Skin {
+  id: string;
+  name: string;
+  color: string;
+  price: number;
+}
+
+export const SKINS: Skin[] = [
+  { id: 'cyan', name: 'Volt', color: '#2ef2ff', price: 0 },
+  { id: 'magenta', name: 'Pulse', color: '#ff3df0', price: 300 },
+  { id: 'lime', name: 'Toxic', color: '#9dff3a', price: 800 },
+  { id: 'orange', name: 'Blaze', color: '#ff8a1f', price: 1500 },
+  { id: 'gold', name: 'Aurum', color: '#ffd23f', price: 3000 },
+  { id: 'white', name: 'Ghost', color: '#f4f1ff', price: 5000 },
+];
+
 export const UPGRADE_INFO: Record<PowerUpType, { name: string; description: string; color: string }> = {
   magnet: { name: 'Magnet', description: 'Pulls in nearby coins', color: COLORS.magnet },
   shield: { name: 'Shield', description: 'Blocks one hit', color: COLORS.shield },

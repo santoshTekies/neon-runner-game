@@ -4,9 +4,6 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// The runner model ships as a .glb asset.
-config.resolver.assetExts.push('glb');
-
 // three's CommonJS entry (used by @react-three/fiber's require('three')) calls the
 // Node-only process.emitWarning and crashes on device. Always use the ES module build,
 // which also guarantees a single copy of three in the bundle.

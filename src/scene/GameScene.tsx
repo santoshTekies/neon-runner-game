@@ -1,12 +1,10 @@
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { StyleSheet } from 'react-native';
 import * as THREE from 'three';
-import { Character } from '../game/characters';
 import { COLORS } from '../game/config';
 import { game } from '../game/engine';
 import { Environment } from './Environment';
 import { Obstacles } from './Obstacles';
-import { CharacterLights } from './characterModel';
 import { Coins, EnergyCells, PowerUps } from './Pickups';
 import { Player } from './Player';
 import { SprintFx } from './SprintFx';
@@ -38,21 +36,19 @@ function EngineDriver() {
   return null;
 }
 
-export function GameScene({ character }: { character: Character }) {
+export function GameScene({ skinColor }: { skinColor: string }) {
   return (
     <Canvas style={StyleSheet.absoluteFill} camera={{ fov: 62, near: 0.1, far: 220, position: [0, 3, 6.4] }}>
       <EngineDriver />
       <color attach="background" args={[COLORS.background]} />
       <fog attach="fog" args={[COLORS.background, 40, 170]} />
-      {/* Only the runner model uses lit materials; neutral white keeps its texture colors true. */}
-      <CharacterLights />
       <Environment />
       <Obstacles />
       <Coins />
       <PowerUps />
       <EnergyCells />
       <SprintFx />
-      <Player key={character.id} character={character} />
+      <Player color={skinColor} />
     </Canvas>
   );
 }

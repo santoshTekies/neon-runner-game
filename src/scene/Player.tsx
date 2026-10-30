@@ -1,11 +1,9 @@
 import { useFrame } from '@react-three/fiber/native';
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { Character } from '../game/characters';
 import { COLORS, LANES } from '../game/config';
 import { game } from '../game/engine';
 import { basic, glowMaterial } from './materials';
-import { ModelErrorBoundary, RunnerModel } from './RunnerModel';
 
 const LIMB_RADIUS = 0.075;
 const THIGH = 0.45;
@@ -21,12 +19,8 @@ function Segment({ length, geometry, material }: { length: number; geometry: THR
   return <mesh geometry={geometry} material={material} position={[0, -length / 2, 0]} />;
 }
 
-/** The runner: the 3D model when it's available, otherwise a procedural stick figure. */
-export function Player({ character }: { character: Character }) {
-  const color = character.accent;
-  const [modelReady, setModelReady] = useState(false);
-  const onModelReady = useCallback(() => setModelReady(true), []);
-  const onModelError = useCallback(() => setModelReady(false), []);
+/** The runner: a procedural neon stick figure. */
+export function Player({ color }: { color: string }) {
   const root = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const shield = useRef<THREE.Mesh>(null);
@@ -161,12 +155,7 @@ export function Player({ character }: { character: Character }) {
     <group ref={root}>
       <mesh geometry={assets.halo} material={assets.glow} position={[0, 1, -0.3]} />
       <mesh ref={aura} geometry={assets.aura} material={assets.auraMat} position={[0, 1, -0.4]} visible={false} />
-      <ModelErrorBoundary onError={onModelError}>
-        <Suspense fallback={null}>
-          <RunnerModel key={character.id} model={character.model} onReady={onModelReady} />
-        </Suspense>
-      </ModelErrorBoundary>
-      <group ref={body} visible={!modelReady}>
+      <group ref={body}>
         {leg('l', -0.13)}
         {leg('r', 0.13)}
         <mesh geometry={assets.torso} material={m} position={[0, HIP_Y + 0.3, 0]} />
