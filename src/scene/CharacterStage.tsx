@@ -3,14 +3,14 @@ import { Suspense, useEffect, useLayoutEffect, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import * as THREE from 'three';
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type { Character } from '../game/characters';
+import type { ModelRunner } from '../game/characters';
 import { CharacterLights, createCharacterModel } from './characterModel';
 import { glowMaterial } from './materials';
 import { ModelErrorBoundary } from './RunnerModel';
 
 const BACKGROUND = '#140b38';
 
-function useCharacterAssets(character: Character) {
+function useCharacterAssets(character: ModelRunner) {
   return useLoader(GLTFLoader, [character.model, character.showcase] as unknown as string[]) as GLTF[];
 }
 
@@ -56,23 +56,29 @@ function Pedestal({ color }: { color: string }) {
   );
 }
 
-function ShowcaseContent({ character, yaw, onReady }: { character: Character; yaw: { current: number }; onReady: () => void }) {
+function ShowcaseContent({ character, yaw, onReady }: { character: ModelRunner; yaw: { current: number }; onReady: () => void }) {
   const [gltf, showcase] = useCharacterAssets(character);
   const rig = useMemo(() => new ShowcaseRig(gltf, showcase), [gltf, showcase]);
-  const camera = useThree((s) => s.camera);
 
-  useLayoutEffect(() => camera.lookAt(0, 0.92, 0), [camera]);
   useEffect(onReady, [onReady]);
   useFrame((_, dt) => rig.update(dt, yaw.current));
 
   return <primitive object={rig.root} />;
 }
 
+/** Aims the camera at the stage before the first frame, so nothing shifts once the model loads. */
+function ShowcaseCamera() {
+  const camera = useThree((s) => s.camera);
+  useLayoutEffect(() => camera.lookAt(0, 0.92, 0), [camera]);
+  return null;
+}
+
 /** Full-body character idling on a neon pedestal. `yaw` is read every frame (drag to rotate). */
-export function CharacterShowcase(props: { character: Character; yaw: { current: number }; onReady: () => void }) {
+export function CharacterShowcase(props: { character: ModelRunner; yaw: { current: number }; onReady: () => void }) {
   return (
     <Canvas style={StyleSheet.absoluteFill} camera={{ fov: 35, near: 0.1, far: 50, position: [0, 1.15, 4.1] }}>
       <color attach="background" args={[BACKGROUND]} />
+      <ShowcaseCamera />
       <CharacterLights />
       <Pedestal color={props.character.accent} />
       <ModelErrorBoundary>

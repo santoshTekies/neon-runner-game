@@ -1,25 +1,25 @@
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { haptic } from '../audio/sound';
-import { CHARACTERS, Character } from '../game/characters';
+import { ModelRunner, RUNNERS } from '../game/characters';
 import { MAX_UPGRADE_LEVEL, PowerUpType, UPGRADE_INFO, powerUpDuration, upgradeCost } from '../game/config';
-import { updateSave, useSave } from '../state/save';
+import { isRunnerOwned, updateSave, useSave } from '../state/save';
 import { CharacterViewer } from './CharacterViewer';
 import { CoinIcon } from './Hud';
 import { NeonButton, NeonText, Panel, Scrim } from './Neon';
 import { UI } from './theme';
 
-type Tab = 'characters' | 'upgrades';
+type Tab = 'runners' | 'upgrades';
 
 export function ShopScreen({ onClose }: { onClose: () => void }) {
   const save = useSave();
-  const [tab, setTab] = useState<Tab>('characters');
-  const [viewing, setViewing] = useState<Character | null>(null);
+  const [tab, setTab] = useState<Tab>('runners');
+  const [viewing, setViewing] = useState<ModelRunner | null>(null);
 
-  const buyCharacter = (id: string, price: number) => {
+  const buyRunner = (id: string, price: number) => {
     if (save.coins < price) return;
     haptic('success');
-    updateSave((d) => ({ ...d, coins: d.coins - price, ownedCharacters: [...d.ownedCharacters, id], character: id }));
+    updateSave((d) => ({ ...d, coins: d.coins - price, ownedRunners: [...d.ownedRunners, id], runner: id }));
   };
 
   const buyUpgrade = (type: PowerUpType) => {
@@ -37,13 +37,7 @@ export function ShopScreen({ onClose }: { onClose: () => void }) {
       <Panel color={UI.pink} style={styles.panel}>
         <View style={styles.header}>
           <View style={styles.tabs}>
-            <NeonButton
-              small
-              label="CHARACTERS"
-              color={tab === 'characters' ? UI.pink : UI.dim}
-              filled={tab === 'characters'}
-              onPress={() => setTab('characters')}
-            />
+            <NeonButton small label="RUNNERS" color={tab === 'runners' ? UI.pink : UI.dim} filled={tab === 'runners'} onPress={() => setTab('runners')} />
             <NeonButton small label="UPGRADES" color={tab === 'upgrades' ? UI.pink : UI.dim} filled={tab === 'upgrades'} onPress={() => setTab('upgrades')} />
           </View>
           <View style={styles.wallet}>
@@ -55,44 +49,61 @@ export function ShopScreen({ onClose }: { onClose: () => void }) {
           <NeonButton small label="CLOSE" color={UI.cyan} onPress={onClose} />
         </View>
 
-        {tab === 'characters' ? (
+        {tab === 'runners' ? (
           <ScrollView horizontal contentContainerStyle={styles.list} showsHorizontalScrollIndicator={false}>
-            {CHARACTERS.map((character) => {
-              const owned = save.ownedCharacters.includes(character.id);
-              const selected = save.character === character.id;
-              const color = character.accent;
+            {RUNNERS.map((runner) => {
+              const owned = isRunnerOwned(save, runner.id);
+              const selected = save.runner === runner.id;
+              const color = runner.accent;
               return (
                 <Pressable
-                  key={character.id}
-                  onPress={() =>
-                    owned ? updateSave((d) => ({ ...d, character: character.id })) : buyCharacter(character.id, character.price)
-                  }
+                  key={runner.id}
+                  onPress={() => (owned ? updateSave((d) => ({ ...d, runner: runner.id })) : buyRunner(runner.id, runner.price))}
                   style={[styles.card, { borderColor: selected ? color : 'rgba(255,255,255,0.15)', shadowColor: color }]}
                 >
-                  <View style={[styles.portrait, { borderColor: color }]} pointerEvents="none">
-                    <Image source={character.portrait} style={styles.portraitImage} resizeMode="cover" />
-                  </View>
+                  {runner.kind === 'model' ? (
+                    <View style={[styles.portrait, { borderColor: color }]} pointerEvents="none">
+                      <Image source={runner.portrait} style={styles.portraitImage} resizeMode="cover" />
+                      <View style={[styles.badge, { backgroundColor: color }]}>
+                        <NeonText size={9} weight="black" color="#0a0420">
+                          3D
+                        </NeonText>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.portrait} pointerEvents="none">
+                      <View style={styles.stickIcon}>
+                        <RunnerIcon color={color} />
+                      </View>
+                    </View>
+                  )}
                   <NeonText size={12} color={color} glowColor={color} style={styles.cardName}>
-                    {character.name.toUpperCase()}
+                    {runner.name.toUpperCase()}
                   </NeonText>
                   {owned ? (
                     <NeonText size={10} color={selected ? UI.green : UI.dim}>
                       {selected ? 'SELECTED' : 'TAP TO SELECT'}
                     </NeonText>
                   ) : (
-                    <View style={[styles.price, save.coins < character.price && styles.priceLocked]}>
+                    <View style={[styles.price, save.coins < runner.price && styles.priceLocked]}>
                       <CoinIcon size={12} />
                       <NeonText size={11} color={UI.gold}>
-                        {character.price}
+                        {runner.price.toLocaleString('en-US')}
                       </NeonText>
                     </View>
                   )}
-                  <NeonButton small label="VIEW" color={color} onPress={() => setViewing(character)} style={styles.view} />
+                  {runner.kind === 'model' && (
+                    <NeonButton small label="VIEW" color={color} onPress={() => setViewing(runner)} style={styles.view} />
+                  )}
                 </Pressable>
               );
             })}
             <View style={[styles.card, styles.comingSoon]}>
-              <RunnerIcon color="rgba(255,255,255,0.18)" />
+              <View style={styles.portrait}>
+                <View style={styles.stickIcon}>
+                  <RunnerIcon color="rgba(255,255,255,0.18)" />
+                </View>
+              </View>
               <NeonText size={12} color={UI.dim} style={styles.cardName}>
                 MORE SOON
               </NeonText>
@@ -174,6 +185,8 @@ const styles = StyleSheet.create({
   },
   portrait: { width: 104, height: 96, borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
   portraitImage: { width: '100%', height: '100%' },
+  stickIcon: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', top: 5, right: 5, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 },
   view: { marginTop: 2 },
   cardName: { textAlign: 'center', paddingHorizontal: 6 },
   comingSoon: { borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)', shadowOpacity: 0 },

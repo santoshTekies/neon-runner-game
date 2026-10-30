@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
-import { CHARACTERS, DEFAULT_CHARACTER } from '../game/characters';
+import { DEFAULT_RUNNER, RUNNERS, TEST_UNLOCKED } from '../game/characters';
 import type { Upgrades } from '../game/engine';
 
 export interface HighScore {
@@ -12,8 +12,9 @@ export interface HighScore {
 export interface SaveData {
   coins: number;
   highScores: HighScore[];
-  ownedCharacters: string[];
-  character: string;
+  ownedRunners: string[];
+  /** Selected runner id (stick figure color or 3D character). */
+  runner: string;
   upgrades: Upgrades;
   settings: { music: boolean; sfx: boolean; haptics: boolean };
 }
@@ -24,8 +25,8 @@ const MAX_SCORES = 10;
 const DEFAULT_SAVE: SaveData = {
   coins: 0,
   highScores: [],
-  ownedCharacters: [DEFAULT_CHARACTER.id],
-  character: DEFAULT_CHARACTER.id,
+  ownedRunners: [DEFAULT_RUNNER.id],
+  runner: DEFAULT_RUNNER.id,
   upgrades: { magnet: 0, shield: 0, multiplier: 0 },
   settings: { music: true, sfx: true, haptics: true },
 };
@@ -37,23 +38,35 @@ export async function loadSave() {
   try {
     const raw = await AsyncStorage.getItem(KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<SaveData>;
+      // Older saves stored stick colors as `skin`/`ownedSkins` or 3D characters as `character`/`ownedCharacters`.
+      const parsed = JSON.parse(raw) as Partial<SaveData> & {
+        ownedSkins?: string[];
+        skin?: string;
+        ownedCharacters?: string[];
+        character?: string;
+      };
+      // ownedCharacters is dropped on purpose: Fit Grandma was free then and is now a paid unlock.
+      const { ownedSkins = [], skin, ownedCharacters, character, ...rest } = parsed;
+      const owned = [DEFAULT_RUNNER.id, ...(rest.ownedRunners ?? []), ...ownedSkins];
       data = {
         ...DEFAULT_SAVE,
-        ...parsed,
-        upgrades: { ...DEFAULT_SAVE.upgrades, ...parsed.upgrades },
-        settings: { ...DEFAULT_SAVE.settings, ...parsed.settings },
+        ...rest,
+        ownedRunners: [...new Set(owned)].filter((id) => RUNNERS.some((r) => r.id === id)),
+        runner: rest.runner ?? character ?? skin ?? DEFAULT_RUNNER.id,
+        upgrades: { ...DEFAULT_SAVE.upgrades, ...rest.upgrades },
+        settings: { ...DEFAULT_SAVE.settings, ...rest.settings },
       };
-      // Drop characters that no longer exist (and fall back if the selected one is gone).
-      data.ownedCharacters = [...new Set([DEFAULT_CHARACTER.id, ...data.ownedCharacters])].filter((id) =>
-        CHARACTERS.some((c) => c.id === id),
-      );
-      if (!data.ownedCharacters.includes(data.character)) data.character = DEFAULT_CHARACTER.id;
+      if (!isRunnerOwned(data, data.runner)) data.runner = DEFAULT_RUNNER.id;
       listeners.forEach((l) => l());
     }
   } catch (e) {
     console.warn('Failed to load save', e);
   }
+}
+
+/** Bought, or unlocked for testing via TEST_UNLOCKED. */
+export function isRunnerOwned(d: SaveData, id: string) {
+  return d.ownedRunners.includes(id) || TEST_UNLOCKED.includes(id);
 }
 
 export function getSave() {

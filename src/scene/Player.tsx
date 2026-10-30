@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber/native';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Character } from '../game/characters';
+import { Runner } from '../game/characters';
 import { COLORS, LANES } from '../game/config';
 import { game } from '../game/engine';
 import { basic, glowMaterial } from './materials';
@@ -21,9 +21,9 @@ function Segment({ length, geometry, material }: { length: number; geometry: THR
   return <mesh geometry={geometry} material={material} position={[0, -length / 2, 0]} />;
 }
 
-/** The runner: the 3D model when it's available, otherwise a procedural stick figure. */
-export function Player({ character }: { character: Character }) {
-  const color = character.accent;
+/** The runner: a neon stick figure, or a 3D character (the stick figure stands in while it loads or if it fails). */
+export function Player({ runner }: { runner: Runner }) {
+  const color = runner.accent;
   const [modelReady, setModelReady] = useState(false);
   const onModelReady = useCallback(() => setModelReady(true), []);
   const onModelError = useCallback(() => setModelReady(false), []);
@@ -161,11 +161,13 @@ export function Player({ character }: { character: Character }) {
     <group ref={root}>
       <mesh geometry={assets.halo} material={assets.glow} position={[0, 1, -0.3]} />
       <mesh ref={aura} geometry={assets.aura} material={assets.auraMat} position={[0, 1, -0.4]} visible={false} />
-      <ModelErrorBoundary onError={onModelError}>
-        <Suspense fallback={null}>
-          <RunnerModel key={character.id} model={character.model} onReady={onModelReady} />
-        </Suspense>
-      </ModelErrorBoundary>
+      {runner.kind === 'model' && (
+        <ModelErrorBoundary onError={onModelError}>
+          <Suspense fallback={null}>
+            <RunnerModel model={runner.model} onReady={onModelReady} />
+          </Suspense>
+        </ModelErrorBoundary>
+      )}
       <group ref={body} visible={!modelReady}>
         {leg('l', -0.13)}
         {leg('r', 0.13)}

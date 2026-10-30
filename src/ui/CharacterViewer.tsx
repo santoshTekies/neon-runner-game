@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Character } from '../game/characters';
+import type { ModelRunner } from '../game/characters';
 import { CharacterShowcase } from '../scene/CharacterStage';
 import { NeonButton, NeonText } from './Neon';
 import { UI } from './theme';
@@ -23,7 +23,7 @@ function createRotateResponder(yaw: { current: number }) {
   });
 }
 
-export function CharacterViewer({ character, onClose }: { character: Character; onClose: () => void }) {
+export function CharacterViewer({ character, onClose }: { character: ModelRunner; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
   const [yaw] = useState(() => ({ current: 0 }));

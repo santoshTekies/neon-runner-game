@@ -1,7 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { StyleSheet } from 'react-native';
 import * as THREE from 'three';
-import { Character } from '../game/characters';
+import { Runner } from '../game/characters';
 import { COLORS } from '../game/config';
 import { game } from '../game/engine';
 import { Environment } from './Environment';
@@ -38,7 +38,7 @@ function EngineDriver() {
   return null;
 }
 
-export function GameScene({ character }: { character: Character }) {
+export function GameScene({ runner }: { runner: Runner }) {
   return (
     <Canvas style={StyleSheet.absoluteFill} camera={{ fov: 62, near: 0.1, far: 220, position: [0, 3, 6.4] }}>
       <EngineDriver />
@@ -52,7 +52,7 @@ export function GameScene({ character }: { character: Character }) {
       <PowerUps />
       <EnergyCells />
       <SprintFx />
-      <Player key={character.id} character={character} />
+      <Player key={runner.id} runner={runner} />
     </Canvas>
   );
 }
